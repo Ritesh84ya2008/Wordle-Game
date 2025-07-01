@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ritesh's Wordle Game</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+  body {
+  margin: 0;
+  font-family: sans-serif;
+  background: linear-gradient(to bottom right, #8b0000, #ff0000);
+  color: white;
+  text-align: center;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  background-color: rgba(0, 0, 0, 0.4);
+  padding: 1rem;
+}
+
+.menu-icon {
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.dropdown {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 10px;
+  z-index: 100;
+}
+
+.dropdown a {
+  display: block;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+}
+
+.dropdown a:hover {
+  background: #333;
+}
+
+.hidden {
+  display: none;
+}
+
+section {
+  padding: 1.5rem;
+}
+
+input, button {
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  border: none;
+}
+
+button {
+  background-color: #3b82f6;
+  color: white;
+  cursor: pointer;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 50px);
+  gap: 5px;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.grid div {
+  width: 50px;
+  height: 50px;
+  background-color: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 4px;
+  font-size: 1.5rem;
+  line-height: 50px;
+  font-weight: bold;
+  color: white;
+  text-transform: uppercase;
+}
+
+.correct {
+  background-color: #22c55e;
+}
+
+.wrong {
+  background-color: #dc2626;
+}
+
+.keyboard {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.keyboard button {
+  width: 30px;
+  height: 40px;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  background-color: #475569;
+  color: white;
+  cursor: pointer;
+}
+
+  </style>
+</head>
+<body>
+  <script>
+    
+let currentRow = 0;
+let currentGuess = "";
+let wordToGuess = "APPLE";
+let maxTries = 6;
+let timerInterval;
+let timeLeft = 60;
+
+const winSound = new Audio("win.mp3");
+const loseSound = new Audio("lose.mp3");
+const typeSound = new Audio("type.mp3");
+
+function startGame() {
+  const name = document.getElementById("username").value;
+  if (!name) return alert("Naam likhna zaroori hai!");
+
+  document.getElementById("display-name").innerText = name;
+  showSection("game-screen");
+  createGrid();
+  createKeyboard();
+  startTimer();
+}
+
+function startTimer() {
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById("timer").innerText = timeLeft;
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      loseSound.play();
+      setTimeout(() => {
+        alert("⏰ Time up! Word tha: " + wordToGuess);
+        location.reload();
+      }, 500);
+    }
+  }, 1000);
+}
+
+function createGrid() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  for (let i = 0; i < 30; i++) {
+    const div = document.createElement("div");
+    div.id = `box-${i}`;
+    grid.appendChild(div);
+  }
+}
+
+function createKeyboard() {
+  const keys = "QWERTYUIOPASDFGHJKLZXCVBNM".split("");
+  const kb = document.getElementById("keyboard");
+  kb.innerHTML = "";
+
+  keys.forEach(k => {
+    const btn = document.createElement("button");
+    btn.innerText = k;
+    btn.onclick = () => handleKey(k);
+    kb.appendChild(btn);
+  });
+
+  const enterBtn = document.createElement("button");
+  enterBtn.innerText = "⏎";
+  enterBtn.onclick = checkGuess;
+  kb.appendChild(enterBtn);
+
+  const delBtn = document.createElement("button");
+  delBtn.innerText = "⌫";
+  delBtn.onclick = () => {
+    if (currentGuess.length > 0) {
+      currentGuess = currentGuess.slice(0, -1);
+      const box = document.getElementById(`box-${currentRow * 5 + currentGuess.length}`);
+      box.innerText = "";
+    }
+  };
+  kb.appendChild(delBtn);
+}
+
+function handleKey(letter) {
+  if (currentGuess.length < 5) {
+    const box = document.getElementById(`box-${currentRow * 5 + currentGuess.length}`);
+    box.innerText = letter;
+    currentGuess += letter;
+    typeSound.play();
+  }
+}
+
+function checkGuess() {
+  if (currentGuess.length !== 5) {
+    alert("5 letter ka word likhiye!");
+    return;
+  }
+
+  const guess = currentGuess.toUpperCase();
+  for (let i = 0; i < 5; i++) {
+    const box = document.getElementById(`box-${currentRow * 5 + i}`);
+    const g = guess[i];
+    const w = wordToGuess[i];
+    if (g === w) {
+      box.classList.add("correct");
+    } else {
+      box.classList.add("wrong");
+    }
+  }
+
+  if (guess === wordToGuess) {
+    clearInterval(timerInterval);
+    winSound.play();
+    setTimeout(() => {
+      alert("🎉 Jeet gaye! Word tha: " + wordToGuess);
+      location.reload();
+    }, 500);
+  } else {
+    currentRow++;
+    currentGuess = "";
+    if (currentRow >= maxTries) {
+      clearInterval(timerInterval);
+      loseSound.play();
+      setTimeout(() => {
+        alert("❌ Game Over! Word tha: " + wordToGuess);
+        location.reload();
+      }, 600);
+    }
+  }
+}
+  </script>
+  <!-- Header with 3-dot menu -->
+  <header>
+    <h1>RiteshDigitale</h1>
+    <div class="menu-icon" onclick="toggleMenu()">&#8942;</div>
+    <div class="dropdown hidden" id="menu">
+      <a href="#" onclick="showSection('home')">🏠 Home</a>
+      <a href="#" onclick="showSection('about')">👨‍🎓 About</a>
+      <a href="#" onclick="showSection('contact')">📞 Contact</a>
+    </div>
+  </header>
+
+  <!-- Name Input Screen -->
+  <section id="home">
+    <div id="name-screen">
+      <h2>Apna Naam Darj Kijiye</h2>
+      <input type="text" id="username" placeholder="Jaise: Ritesh" />
+      <button onclick="startGame()">Submit</button>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="hidden">
+    <h2>About Me</h2>
+    <p><strong>Name:</strong> Ritesh Kumar</p>
+    <p><strong>Class:</strong> 12 (B1), DR B P P S Sarvodaya IC, Ramganj, Milkipur, Ayodhya</p>
+    <p><strong>Father's Name:</strong> Shri Dinesh Kumar</p>
+    <p><strong>Mother's Name:</strong> Smt. Sunita Devi</p>
+    <p><strong>My Journey:</strong> I have learned HTML, CSS, JavaScript and built games. I'm passionate about coding and making interactive websites.</p>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="hidden">
+    <h2>Contact Me</h2>
+    <p><strong>📱 Mobile:</strong> +91 9123456789</p>
+    <p><strong>📧 Email:</strong> ritesh@example.com</p>
+    <p>
+      <a href="https://wa.me/919450091853" target="_blank">📱 WhatsApp</a> |
+      <a href="https://instagram.com/riteshchaurasiya0" target="_blank">📷 Instagram</a>
+    </p>
+  </section>
+
+  <!-- Game Screen -->
+  <section id="game-screen" class="hidden">
+    <p>👋 Welcome, <span id="display-name"></span>!</p>
+    <p>Time Left: <span id="timer">60</span>s</p>
+    <div class="grid" id="grid"></div>
+    <div class="keyboard" id="keyboard"></div>
+  </section>
+
+  <script src="script.js"></script>
+  <script>
+    function toggleMenu() {
+      document.getElementById("menu").classList.toggle("hidden");
+    }
+
+    function showSection(sectionId) {
+      const sections = ["home", "about", "contact", "game-screen"];
+      sections.forEach(id => {
+        document.getElementById(id).classList.add("hidden");
+      });
+      document.getElementById(sectionId).classList.remove("hidden");
+      document.getElementById("menu").classList.add("hidden");
+    }
+  </script>
+</body>
+</html>
